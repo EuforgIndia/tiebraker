@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Badminton Score</title>
+  <style>
+    body { text-align: center; font-family: Arial; }
+    .score { font-size: 50px; margin: 20px; }
+    button { font-size: 20px; padding: 10px 20px; margin: 10px; }
+  </style>
+</head>
+<body>
+
+<h1>🏸 Badminton Score</h1>
+
+<h2>Player A vs Player B</h2>
+
+<div class="score">
+  <span id="scoreA">0</span> - 
+  <span id="scoreB">0</span>
+</div>
+
+<button onclick="addPoint('A')">+ Point A</button>
+<button onclick="addPoint('B')">+ Point B</button>
+<br>
+<button onclick="undo()">Undo</button>
+
+<script>
+let scoreA = 0;
+let scoreB = 0;
+let history = [];
+
+function addPoint(player) {
+  history.push({scoreA, scoreB});
+
+  if (player === 'A') scoreA++;
+  else scoreB++;
+
+  updateDisplay();
+}
+
+function undo() {
+  if (history.length > 0) {
+    let last = history.pop();
+    scoreA = last.scoreA;
+    scoreB = last.scoreB;
+    updateDisplay();
+  }
+}
+
+function updateDisplay() {
+  document.getElementById("scoreA").innerText = scoreA;
+  document.getElementById("scoreB").innerText = scoreB;
+}
+</script>
+
+</body>
+</html>
