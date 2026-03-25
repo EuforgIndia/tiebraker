@@ -19,6 +19,7 @@
   <span id="scoreB">0</span>
 </div>
 <h2 id="winner" style="color: green;"></h2>
+<h3 id="serverInfo">Server: Player A (Right)</h3>
 <button onclick="addPoint('A')">+ Point A</button>
 <button onclick="addPoint('B')">+ Point B</button>
 <br>
@@ -29,14 +30,19 @@ let scoreA = 0;
 let scoreB = 0;
 let history = [];
 let gameOver = false;
+let currentServer = 'A';
 
 function addPoint(player) {
   if (gameOver) return;
 
-  history.push({scoreA, scoreB});
+  history.push({scoreA, scoreB, currentServer});
 
+  // Point update
   if (player === 'A') scoreA++;
   else scoreB++;
+
+  // Winner becomes next server
+  currentServer = player;
 
   checkWinner();
   updateDisplay();
@@ -47,8 +53,12 @@ function undo() {
     let last = history.pop();
     scoreA = last.scoreA;
     scoreB = last.scoreB;
+    currentServer = last.currentServer;
+
     gameOver = false;
     document.getElementById("winner").innerText = "";
+    document.body.classList.remove("win-bg");
+
     updateDisplay();
   }
 }
@@ -69,6 +79,13 @@ function checkWinner() {
 function updateDisplay() {
   document.getElementById("scoreA").innerText = scoreA;
   document.getElementById("scoreB").innerText = scoreB;
+
+  // 🧠 Decide court side
+  let serverScore = currentServer === 'A' ? scoreA : scoreB;
+  let side = (serverScore % 2 === 0) ? "Right" : "Left";
+
+  document.getElementById("serverInfo").innerText =
+    `Server: Player ${currentServer} (${side})`;
 
   if (gameOver) {
     let winner = scoreA > scoreB ? "Player A Wins!" : "Player B Wins!";
