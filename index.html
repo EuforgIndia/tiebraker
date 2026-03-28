@@ -702,257 +702,83 @@
   </div>
 </div>
 
-<script>
-  var scoreA = 0, scoreB = 0;
-  var gameHistory = [];
-  var rallyHistory = [];
-  var currentServer = 'A';
-  var currentServerName = '';
-  var gameOver = false;
-  var gameType = 'singles';
-  var teamA = { p1:'', p2:'' };
-  var teamB = { p1:'', p2:'' };
-  var courtPositions = { 'A-left':null,'A-right':null,'B-left':null,'B-right':null };
-  var editingCell = null;
+<script type="module">
 
-  function selectType(t) {
-    gameType = t;
-    document.getElementById('btn-singles').className = 'type-btn'+(t==='singles'?' selected':'');
-    document.getElementById('btn-doubles').className = 'type-btn'+(t==='doubles'?' selected':'');
-    document.getElementById('doublesA').className = 'dbln'+(t==='doubles'?' on':'');
-    document.getElementById('doublesB').className = 'dbln'+(t==='doubles'?' on':'');
+// 🔥 Firebase imports
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+// 🔑 Your config (already correct)
+const firebaseConfig = {
+  apiKey: "AIzaSyB4P5DD9i7ZiHSeV9IYObyldj3aWUkGg2Y",
+  authDomain: "scoreflow-c4799.firebaseapp.com",
+  projectId: "scoreflow-c4799",
+  storageBucket: "scoreflow-c4799.firebasestorage.app",
+  messagingSenderId: "879654610680",
+  appId: "1:879654610680:web:804b37c22d6cbd32333d0d",
+  measurementId: "G-XSHZ789Z65"
+};
+
+// 🔥 Init
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ================= YOUR VARIABLES =================
+var scoreA = 0, scoreB = 0;
+var currentServer = 'A';
+var currentServerName = '';
+var gameOver = false;
+
+// ================= 🔥 FIREBASE LISTENER =================
+onSnapshot(doc(db, "matches", "match1"), (docSnap) => {
+  if (docSnap.exists()) {
+    let data = docSnap.data();
+
+    scoreA = data.scoreA || 0;
+    scoreB = data.scoreB || 0;
+    currentServer = data.currentServer || 'A';
+    currentServerName = data.currentServerName || '';
+
+    updateDisplay(true); // avoid loop
   }
+});
 
-  function gv(id){ var v=document.getElementById(id).value.trim(); return v||null; }
+// ================= 🔥 SAVE FUNCTION =================
+function saveToFirebase() {
+  setDoc(doc(db, "matches", "match1"), {
+    scoreA,
+    scoreB,
+    currentServer,
+    currentServerName
+  });
+}
 
-  function startMatch() {
-    var a1=gv('nameA1')||'Player A', b1=gv('nameB1')||'Player B';
-    teamA={p1:a1, p2:gameType==='doubles'?(gv('nameA2')||'Partner A'):''};
-    teamB={p1:b1, p2:gameType==='doubles'?(gv('nameB2')||'Partner B'):''};
-    scoreA=0; scoreB=0; gameHistory=[]; rallyHistory=[]; gameOver=false;
-    currentServer='A'; currentServerName=teamA.p1;
-    courtPositions={'A-left':gameType==='doubles'?(teamA.p2||null):null,'A-right':teamA.p1,'B-left':gameType==='doubles'?(teamB.p2||null):null,'B-right':teamB.p1};
+// ================= YOUR EXISTING FUNCTIONS =================
 
-    document.getElementById('matchTypeBadge').textContent = gameType==='singles'?'🧍 Singles':'👥 Doubles';
-    document.getElementById('dispA1').textContent = teamA.p1;
-    document.getElementById('dispA2').textContent = teamA.p2||'';
-    document.getElementById('dispB1').textContent = teamB.p1;
-    document.getElementById('dispB2').textContent = teamB.p2||'';
-    document.getElementById('btnLabelA').textContent = teamA.p1.split(' ')[0];
-    document.getElementById('btnLabelB').textContent = teamB.p1.split(' ')[0];
-    document.getElementById('legA').textContent = teamA.p1.split(' ')[0];
-    document.getElementById('legB').textContent = teamB.p1.split(' ')[0];
-    document.getElementById('courtHint').style.display = gameType==='doubles'?'block':'none';
-    document.getElementById('winnerBanner').className = 'winner-banner';
-    document.getElementById('screen-setup').className = 'screen';
-    document.getElementById('screen-match').className = 'screen active';
-    updateDisplay();
+function addPoint(player){
+  if(gameOver) return;
+
+  if(player==='A') scoreA++;
+  else scoreB++;
+
+  currentServer = player;
+
+  updateDisplay();
+  saveToFirebase();
+}
+
+function updateDisplay(fromFirebase=false){
+  document.getElementById('scoreA').textContent = scoreA;
+  document.getElementById('scoreB').textContent = scoreB;
+
+  document.getElementById('serverInfo').innerHTML =
+    'Server: <b>' + currentServerName + '</b>';
+
+  if(!fromFirebase){
+    saveToFirebase();
   }
+}
 
-  function newMatch() {
-    document.getElementById('screen-match').className='screen';
-    document.getElementById('screen-setup').className='screen active';
-  }
-
-  /* POSITION PICKER */
-  function openPositionPicker(cellId) {
-    editingCell = cellId;
-    var team=cellId.charAt(0), obj=team==='A'?teamA:teamB;
-    var side=cellId.split('-')[1];
-    document.getElementById('posSubTitle').textContent=(team==='A'?'Team A':'Team B')+' — '+(side==='left'?'Left box':'Right box');
-    var list=document.getElementById('pickList'); list.innerHTML='';
-    var choices=[obj.p1];
-    if(gameType==='doubles'&&obj.p2) choices.push(obj.p2);
-    choices.push(null);
-    for(var i=0;i<choices.length;i++){
-      var n=choices[i], ic=(courtPositions[cellId]===n);
-      var btn=document.createElement('button');
-      btn.className='pick-btn'+(ic?' current':'');
-      btn.innerHTML='<div class="pdot"></div><div><div class="pteam">'+(n?( team==='A'?'Team A':'Team B'):'')+'</div><div class="pname">'+esc(n||'— Empty —')+'</div></div>';
-      (function(nm){ btn.onclick=function(){ assignPosition(cellId,nm); }; })(n);
-      list.appendChild(btn);
-    }
-    document.getElementById('posOverlay').className='overlay open';
-  }
-
-  function assignPosition(cellId, name) {
-    var team=cellId.charAt(0), side=cellId.split('-')[1];
-    var otherSide=side==='left'?'right':'left';
-    var otherCellId=team+'-'+otherSide;
-    var obj=team==='A'?teamA:teamB;
-    courtPositions[cellId]=name;
-    if(gameType==='doubles'&&obj.p2&&name!==null){
-      courtPositions[otherCellId]=(name===obj.p1)?obj.p2:obj.p1;
-    }
-    closePosOverlay(); updateDisplay();
-  }
-
-  function closePosOverlay(){ document.getElementById('posOverlay').className='overlay'; editingCell=null; }
-  function ocp(e){ if(e.target===document.getElementById('posOverlay')) closePosOverlay(); }
-
-  /* SERVER PICKER */
-  function openServerPicker(){
-    var list=document.getElementById('serverPickList'); list.innerHTML='';
-    var all=buildAllPlayers();
-    for(var i=0;i<all.length;i++){
-      var p=all[i], ic=(p.name===currentServerName);
-      var btn=document.createElement('button');
-      btn.className='pick-btn'+(ic?' current':'');
-      btn.innerHTML='<div class="pdot"></div><div><div class="pteam">'+esc(p.teamLabel)+'</div><div class="pname">'+esc(p.name)+'</div></div>';
-      (function(pl){ btn.onclick=function(){ selectServer(pl); }; })(p);
-      list.appendChild(btn);
-    }
-    document.getElementById('serverOverlay').className='overlay open';
-  }
-
-  function buildAllPlayers(){
-    var l=[{name:teamA.p1,team:'A',teamLabel:'Team A'}];
-    if(gameType==='doubles'&&teamA.p2) l.push({name:teamA.p2,team:'A',teamLabel:'Team A'});
-    l.push({name:teamB.p1,team:'B',teamLabel:'Team B'});
-    if(gameType==='doubles'&&teamB.p2) l.push({name:teamB.p2,team:'B',teamLabel:'Team B'});
-    return l;
-  }
-
-  function selectServer(player){
-    currentServer=player.team; currentServerName=player.name;
-    var serverScore=currentServer==='A'?scoreA:scoreB;
-    var side=(serverScore%2===0)?'right':'left';
-    var otherSide=side==='left'?'right':'left';
-    var obj=player.team==='A'?teamA:teamB;
-    courtPositions[player.team+'-'+side]=player.name;
-    if(gameType==='doubles'&&obj.p2){
-      courtPositions[player.team+'-'+otherSide]=(player.name===obj.p1)?obj.p2:obj.p1;
-    }
-    closeServerPicker(); updateDisplay();
-  }
-
-  function closeServerPicker(){ document.getElementById('serverOverlay').className='overlay'; }
-  function ocs(e){ if(e.target===document.getElementById('serverOverlay')) closeServerPicker(); }
-
-  /* GAME LOGIC */
-  function addPoint(player){
-    if(gameOver) return;
-    gameHistory.push({scoreA:scoreA,scoreB:scoreB,currentServer:currentServer,currentServerName:currentServerName,rally:rallyHistory.slice(),positions:JSON.parse(JSON.stringify(courtPositions))});
-    if(player==='A') scoreA++; else scoreB++;
-    currentServer=player;
-    var wt=player==='A'?teamA:teamB, lt=player==='A'?teamB:teamA;
-    if(currentServerName===lt.p1||currentServerName===lt.p2) currentServerName=wt.p1;
-    rallyHistory.push(player);
-    var el=document.getElementById(player==='A'?'blockA':'blockB');
-    el.classList.add('flash');
-    setTimeout(function(){ el.classList.remove('flash'); },400);
-    checkWinner(); updateDisplay();
-  }
-
-  function undo(){
-    if(gameHistory.length===0) return;
-    var last=gameHistory.pop();
-    scoreA=last.scoreA; scoreB=last.scoreB;
-    currentServer=last.currentServer; currentServerName=last.currentServerName;
-    rallyHistory=last.rally; courtPositions=last.positions;
-    gameOver=false;
-    document.getElementById('winnerBanner').className='winner-banner';
-    updateDisplay();
-  }
-
-  function checkWinner(){
-    if((scoreA>=21||scoreB>=21)&&Math.abs(scoreA-scoreB)>=2) gameOver=true;
-    if(scoreA>=30||scoreB>=30) gameOver=true;
-  }
-
-  function updateDisplay(){
-    document.getElementById('scoreA').textContent=scoreA;
-    document.getElementById('scoreB').textContent=scoreB;
-    document.getElementById('blockA').className='sb-score-block'+(scoreA>scoreB?' leading':'');
-    document.getElementById('blockB').className='sb-score-block'+(scoreB>scoreA?' leading':'');
-
-    var ss=currentServer==='A'?scoreA:scoreB;
-    var side=(ss%2===0)?'Right':'Left';
-    document.getElementById('serverInfo').innerHTML='Server: <b>'+esc(currentServerName)+' ('+side+')</b>';
-
-    var ids=['A-left','A-right','B-left','B-right'];
-    var activeCell=currentServer+'-'+side.toLowerCase();
-    for(var i=0;i<ids.length;i++){
-      var cid=ids[i], el=document.getElementById(cid);
-      var assigned=courtPositions[cid], isActive=(cid===activeCell);
-      el.className='cell'+(isActive?' active-server':(assigned?' has-player':''));
-      if(cid.indexOf('-left')!==-1) el.style.borderRight='2px solid #2e2720';
-      document.getElementById('cell-name-'+cid).textContent=assigned?shortName(assigned):'—';
-    }
-
-    var html='';
-    for(var j=0;j<rallyHistory.length;j++) html+='<div class="rtape-dot '+(rallyHistory[j]==='A'?'rt-a':'rt-b')+'"></div>';
-    document.getElementById('rallyDots').innerHTML=html;
-
-    document.getElementById('btnUndo').disabled=gameHistory.length===0;
-    document.getElementById('btnA').disabled=gameOver;
-    document.getElementById('btnB').disabled=gameOver;
-
-    if(gameOver){
-      var wl=scoreA>scoreB?(teamA.p2?teamA.p1+' & '+teamA.p2:teamA.p1):(teamB.p2?teamB.p1+' & '+teamB.p2:teamB.p1);
-      document.getElementById('winnerName').textContent=wl+' WINS';
-      document.getElementById('winnerBanner').className='winner-banner visible';
-    }
-  }
-
-  function shortName(n){ var f=n.split(' ')[0]; return f.length>9?f.substring(0,8)+'…':f; }
-  function esc(s){ if(!s)return''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-  /* SHARE */
-  function buildShareText(){
-    var tl=gameType==='doubles'?'Doubles':'Singles';
-    var al=teamA.p2?teamA.p1+' & '+teamA.p2:teamA.p1;
-    var bl=teamB.p2?teamB.p1+' & '+teamB.p2:teamB.p1;
-    var w=scoreA>scoreB?al:(scoreB>scoreA?bl:'Tied');
-    return['🏸 BADMINTON MATCH RESULT','─────────────────────','Type: '+tl,'',al+'  vs  '+bl,'','📊 Score: '+scoreA+' - '+scoreB,gameOver?'🏆 Winner: '+w:'⏳ Match in progress','','Rallies: '+rallyHistory.length,'─────────────────────'].join('\n');
-  }
-
-  function openShare(){ document.getElementById('shareText').textContent=buildShareText(); document.getElementById('copiedMsg').textContent=''; document.getElementById('shareOverlay').className='overlay open'; }
-  function closeShare(){ document.getElementById('shareOverlay').className='overlay'; }
-  function osh(e){ if(e.target===document.getElementById('shareOverlay')) closeShare(); }
-
-  function copyResult(){
-    var t=buildShareText();
-    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(function(){ fc(); }); }
-    else{ var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); fc(); }
-  }
-  function fc(){ document.getElementById('copiedMsg').textContent='✓ COPIED'; setTimeout(function(){ document.getElementById('copiedMsg').textContent=''; },2000); }
-  function shareWhatsApp() {
-    var text = buildShareText();
-    if (navigator.share) {
-      navigator.share({ text: text }).catch(function() { doClipboardCopy(text); });
-      return;
-    }
-    doClipboardCopy(text);
-  }
-
-  function doClipboardCopy(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function() { showShareOptions(text, true); }).catch(function() { legacyCopy(text); });
-      return;
-    }
-    legacyCopy(text);
-  }
-
-  function legacyCopy(text) {
-    var ta = document.createElement('textarea');
-    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.focus(); ta.select();
-    var ok = false; try { ok = document.execCommand('copy'); } catch(e) {}
-    document.body.removeChild(ta); showShareOptions(text, ok);
-  }
-
-  function showShareOptions(text, copied) {
-    var modal = document.getElementById('waFallbackModal');
-    var msg = document.getElementById('waFallbackMsg');
-    msg.innerHTML = copied
-      ? '<b style="color:#25D366">✓ Copied!</b><br>Open WhatsApp and paste.'
-      : 'Tap below to open WhatsApp.';
-    document.getElementById('waDirectLink').href = 'https://wa.me/?text=' + encodeURIComponent(text);
-    modal.style.display = 'flex';
-  }
-
-  
 </script>
 
 <div id="waFallbackModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;align-items:center;justify-content:center;padding:20px">
