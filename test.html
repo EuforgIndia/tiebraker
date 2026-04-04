@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>Test Share</h2>
+
+<button onclick="sendData()">Send Data to App</button>
+
+<script>
+function sendData(){
+  var message = "Hello from WebView 🚀";
+
+  try {
+    window.AppInventor.setWebViewString(message);
+    alert("Sent to Kodular");
+  } catch(e){
+    alert("Not in Kodular");
+  }
+}
+</script>
+
+</body>
+</html>
