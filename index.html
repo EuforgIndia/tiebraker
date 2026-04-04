@@ -1357,27 +1357,47 @@ function doShareImage(){
 //     dlFromPreview();
 //   },'image/png');
 // }
+// function shareImageFile(){
+//    if(!_cachedCanvas){
+//     alert("No image generated");
+//     return;
+//   }
+//   alert("Button clicked after canvas");   // 👈 ADD HERE
+//   var dataUrl = _cachedCanvas.toDataURL("image/png");
+
+//   // ✅ SEND TO KODULAR
+//   if (window.AppInventor && window.AppInventor.setWebViewString) {
+//     window.AppInventor.setWebViewString(dataUrl);
+//     return;
+//   }
+
+//   // 🌐 Browser fallback (for testing in Chrome)
+//   var a = document.createElement("a");
+//   a.href = dataUrl;
+//   a.download = "result.png";
+//   document.body.appendChild(a);
+//   a.click();
+//   document.body.removeChild(a);
+// }
 function shareImageFile(){
-   if(!_cachedCanvas){
+  alert("Button clicked modified");
+
+  if(!_cachedCanvas){
     alert("No image generated");
     return;
   }
-  alert("Button clicked after canvas");   // 👈 ADD HERE
+
   var dataUrl = _cachedCanvas.toDataURL("image/png");
 
-  // ✅ SEND TO KODULAR
-  if (window.AppInventor && window.AppInventor.setWebViewString) {
+  // 🔥 FORCE CALL (no condition)
+  try {
     window.AppInventor.setWebViewString(dataUrl);
-    return;
+    alert("Sent to Kodular");  // debug
+  } catch(e) {
+    alert("Not in Kodular: " + e);
   }
 
-  // 🌐 Browser fallback (for testing in Chrome)
-  var a = document.createElement("a");
-  a.href = dataUrl;
-  a.download = "result.png";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  // fallback (optional)
 }
 function shareTextOnly(){if(navigator.share)navigator.share({title:'Badminton Match Result',text:buildShareText()});}
 function dlFromPreview(){if(!_cachedCanvas)return;var a=document.createElement('a');a.download='badminton-result.png';a.href=_cachedCanvas.toDataURL('image/png');document.body.appendChild(a);a.click();document.body.removeChild(a);}
