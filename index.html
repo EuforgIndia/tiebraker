@@ -1346,16 +1346,58 @@ function doShareImage(){
   try{var c=buildShareCanvas();_cachedCanvas=c;document.getElementById('imgPreview').src=c.toDataURL('image/png');closeShareModal();document.getElementById('imgPreviewOverlay').className='open';}
   catch(e){setStatus('Could not generate image','err');}
 }
+// function shareImageFile(){
+//   if(!_cachedCanvas)return;
+//   _cachedCanvas.toBlob(function(blob){
+//     var file=new File([blob],'badminton-result.png',{type:'image/png'});
+//     if(navigator.canShare&&navigator.canShare({files:[file]})){
+//       navigator.share({files:[file],title:'Badminton Match Result',text:buildShareText()}).then(function(){closePreview();}).catch(function(e){if(e.name!=='AbortError')shareTextOnly();});return;
+//     }
+//     if(navigator.share){navigator.share({title:'Badminton Match Result',text:buildShareText()}).then(function(){closePreview();}).catch(function(){});return;}
+//     dlFromPreview();
+//   },'image/png');
+// }
+// function shareImageFile(){
+//    if(!_cachedCanvas){
+//     alert("No image generated");
+//     return;
+//   }
+//   alert("Button clicked after canvas");   // 👈 ADD HERE
+//   var dataUrl = _cachedCanvas.toDataURL("image/png");
+
+//   // ✅ SEND TO KODULAR
+//   if (window.AppInventor && window.AppInventor.setWebViewString) {
+//     window.AppInventor.setWebViewString(dataUrl);
+//     return;
+//   }
+
+//   // 🌐 Browser fallback (for testing in Chrome)
+//   var a = document.createElement("a");
+//   a.href = dataUrl;
+//   a.download = "result.png";
+//   document.body.appendChild(a);
+//   a.click();
+//   document.body.removeChild(a);
+// }
 function shareImageFile(){
-  if(!_cachedCanvas)return;
-  _cachedCanvas.toBlob(function(blob){
-    var file=new File([blob],'badminton-result.png',{type:'image/png'});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      navigator.share({files:[file],title:'Badminton Match Result',text:buildShareText()}).then(function(){closePreview();}).catch(function(e){if(e.name!=='AbortError')shareTextOnly();});return;
-    }
-    if(navigator.share){navigator.share({title:'Badminton Match Result',text:buildShareText()}).then(function(){closePreview();}).catch(function(){});return;}
-    dlFromPreview();
-  },'image/png');
+  alert("Button clicked modified");
+
+  if(!_cachedCanvas){
+    alert("No image generated");
+    return;
+  }
+
+  var dataUrl = _cachedCanvas.toDataURL("image/png");
+
+  // 🔥 FORCE CALL (no condition)
+  try {
+    window.AppInventor.setWebViewString(dataUrl);
+    alert("Sent to Kodular");  // debug
+  } catch(e) {
+    alert("Not in Kodular: " + e);
+  }
+
+  // fallback (optional)
 }
 function shareTextOnly(){if(navigator.share)navigator.share({title:'Badminton Match Result',text:buildShareText()});}
 function dlFromPreview(){if(!_cachedCanvas)return;var a=document.createElement('a');a.download='badminton-result.png';a.href=_cachedCanvas.toDataURL('image/png');document.body.appendChild(a);a.click();document.body.removeChild(a);}

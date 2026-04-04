@@ -1,0 +1,18 @@
+<button onclick="sendScreenshot()">Share Score</button>
+<script>
+function sendScreenshot() {
+    // Create simple canvas with score
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;
+    canvas.height = 300;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, 400, 300);
+    ctx.fillStyle = 'black';
+    ctx.font = '30px Arial';
+    ctx.fillText('Score: 21-15', 50, 150);
+    
+    const dataURL = canvas.toDataURL();
+    window.AppInventor.setWebViewString(dataURL);
+}
+</script>
