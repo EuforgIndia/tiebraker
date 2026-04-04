@@ -2,37 +2,47 @@
 <html>
 <body>
 
-<h2>Test Share</h2>
+<h2>Share Image</h2>
 
-<button onclick="sendImage()">Send Image</button>
+<button onclick="sendImage()">Share Result</button>
 
 <script>
-    function sendImage(){
-      var canvas = document.createElement("canvas");
-      canvas.width = 300;
-      canvas.height = 150;
-    
-      var ctx = canvas.getContext("2d");
-    
-      // Background
-      ctx.fillStyle = "#0f172a";
-      ctx.fillRect(0, 0, 300, 150);
-    
-      // Text
-      ctx.fillStyle = "white";
-      ctx.font = "20px Arial";
-      ctx.fillText("Badminton Result 🏸", 30, 60);
-      ctx.fillText("Team A vs Team B", 30, 100);
-    
-      var dataUrl = canvas.toDataURL("image/png");
-    
-      try {
-        window.AppInventor.setWebViewString(dataUrl);
-      } catch(e){
-        alert("Error sending image");
+function sendImage(){
+  var canvas = document.createElement("canvas");
+  canvas.width = 300;
+  canvas.height = 150;
+
+  var ctx = canvas.getContext("2d");
+
+  // Background
+  ctx.fillStyle = "#0f172a";
+  ctx.fillRect(0, 0, 300, 150);
+
+  // Text
+  ctx.fillStyle = "white";
+  ctx.font = "20px Arial";
+  ctx.fillText("Badminton Result 🏸", 30, 60);
+  ctx.fillText("Team A vs Team B", 30, 100);
+
+  var dataUrl = canvas.toDataURL("image/png");
+
+  // Convert to file and share
+  fetch(dataUrl)
+    .then(res => res.blob())
+    .then(blob => {
+      const file = new File([blob], "result.png", { type: "image/png" });
+
+      if (navigator.share) {
+        navigator.share({
+          files: [file],
+          title: "Match Result"
+        });
+      } else {
+        alert("Sharing not supported");
       }
-    }
-    </script>
-    
+    });
+}
+</script>
+
 </body>
 </html>
